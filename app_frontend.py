@@ -6,13 +6,7 @@ from streamlit import session_state as session
 import pandas as pd
 import numpy as np
 import re
-import nltk
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-nltk.download('stopwords')
-nltk.download('punkt')
-from nltk import word_tokenize
-from nltk.corpus import stopwords
+
 
 
 def recommend_table(user_id,tfidf_data, movie_count=20):
