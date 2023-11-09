@@ -19,7 +19,7 @@ def recommend_table(user_id,tfidf_data, movie_count=20):
  
     
     tfidf_data=tfidf_data.loc[tfidf_data["Id"].astype(str)==user_id]
-
+    print(tfidf_data)
     
     return  tfidf_data[:movie_count]
 
@@ -32,7 +32,7 @@ def load_data():
     :return: tfidf data
     """
     tfidf_data = pd.read_csv("data/recommended_movies2.csv",delimiter=",")
-    print(tfidf_data)
+
     tfidf_data.columns=["Number","Title","Id"]
     tfidf_data["Id"]=tfidf_data["Id"].astype(str)
     return tfidf_data
