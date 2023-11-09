@@ -19,6 +19,7 @@ def recommend_table(user_id,tfidf_data, movie_count=20):
  
     
     tfidf_data=tfidf_data.loc[tfidf_data["Id"].astype(str)==user_id]
+    print(user_id)
     print(tfidf_data)
     
     return  tfidf_data[:movie_count]
