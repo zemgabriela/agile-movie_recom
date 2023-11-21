@@ -5,15 +5,7 @@ from streamlit import session_state as session
 import requests
 import pandas as pd
 import numpy as np
-import re
-import nltk
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-nltk.download('stopwords')
-nltk.download('punkt')
-from nltk import word_tokenize
-from nltk.corpus import stopwords
-
+from streamlit_extras.switch_page_button import switch_page
 
 def recommend_table(user_id,tfidf_data, movie_count=20):
  
@@ -27,35 +19,37 @@ def recommend_table(user_id,tfidf_data, movie_count=20):
 #@st.cache(persist=True, show_spinner=False, suppress_st_warning=True)
 
 def load_data():
-    """
-    load and cache data
-    :return: tfidf data
-    """
+
     tfidf_data = pd.read_csv("data/recommended_movies2.csv",delimiter=",")
 
     tfidf_data.columns=["Number","Title","Id"]
     tfidf_data["Id"]=tfidf_data["Id"].astype(str)
     return tfidf_data
 
+if st.button('Home'):
+    switch_page('Home')
+
 tfidf = load_data()
 user_ids=list(tfidf["Id"])
 dataframe = None
 
 st.title("""
-Recommendation System for Agile
-This is an Content Based Recommender System for each user and customize quantity of recommendations 😎.
- """)
+Welcome user {0}
+ """.format(session.user_id))
+
+st.text("")
+
+st.title("""Please Choose your preferences""")
 
 st.text("")
 st.text("")
 st.text("")
+
+#session.user_id=st.text_input(label="Write your user id")
+
 st.text("")
 
-session.user_id=st.text_input(label="Write your user id")
-st.text("")
-st.text("")
-
-session.slider_count = st.slider(label="movie_count", min_value=1, max_value=5)
+session.slider_count = st.slider(label="Choose how many movie recommendations do you want.", min_value=1, max_value=5)
 
 st.text("")
 st.text("")
@@ -73,39 +67,34 @@ st.text("")
 st.text("")
 
 
+#st.set_page_config(initial_sidebar_state="collapsed") 
+st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+
+
+
 from PIL import Image
 
 url = "http://api.themoviedb.org/3/genre/movie/list?api_key=8dd915995c815307e7dd3dd84482e7b7"
 
 headers = {"accept": "application/json"}
 
-#st.write("This is :blue[test]")
-#r = requests.post(url, headers=headers, files=files)
 list_genres = requests.get(url, headers=headers).json()['genres']
 df_genres=pd.DataFrame(list_genres)
-#http://api.themoviedb.org/3/genre/movie/list?api_key=####
+
 if dataframe is not None:
 
     if str(session.user_id) in user_ids:
-        #st.write(df_genres.to_html(index=False), unsafe_allow_html=True)
-        for title in dataframe["Title"]:
-            print(list_genres)
 
-            #original_title = '<p style="font-family:Courier; color:Blue; font-size: 20px;">"++'</p>'
-            #st.markdown(original_title, unsafe_allow_html=True)
-            #title="Jack Reacher"
+        for title in dataframe["Title"]:
 
             title=title.replace(" ","+")
             url = "https://api.themoviedb.org/3/search/movie?query="+title+"&api_key=8dd915995c815307e7dd3dd84482e7b7"
 
             headers = {"accept": "application/json"}
 
-
-            #r = requests.post(url, headers=headers, files=files)
             response = requests.get(url, headers=headers).json()['results'][0]
     
             photo_path="https://image.tmdb.org/t/p/w185/"+response['poster_path']
-            print(photo_path)
             title=response['title']
             description=response['overview']
             col1, col2, col3 = st.columns(3)
@@ -132,10 +121,6 @@ if dataframe is not None:
                 else:
                     st.write(description[:230])
 
-                
 
-
-            
-            #st.image(image, caption='Sunrise by the mountains')
     else:
         st.write("Sorry, it seems that your User ID is not correct")
