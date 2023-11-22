@@ -1,15 +1,12 @@
+import pandas as pd
 import streamlit as st
+from streamlit import session_state as session
+import requests
 import pandas as pd
 import numpy as np
+from streamlit_extras.switch_page_button import switch_page
+from joblib import dump, load
 from imdb import IMDb
-import requests
-from io import BytesIO
-from PIL import Image
-from joblib import load
-
-#######################
-###### BACKEND ########
-#######################
 
 # Load movies.csv
 def load_movie_data():
@@ -26,12 +23,13 @@ def load_movie_data():
 
 movies_df = load_movie_data()
 
-# Loading the Recommender Model stored 
+
+@st.cache_data()
 def load_model():
-    model = load('model.pkl')
+    model = load('model.pkl') 
+
     return model
 
-model = load_model()
 
 def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None, start_year=None, end_year=None):
     # Apply genre/year filters before making predictions
@@ -72,6 +70,15 @@ unique_genres=['Action', 'Adventure', 'Animation', 'Children', 'Comedy', 'Crime'
 movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce')
 min_year_df=int(movies_df['year'].min())
 max_year_df=int(movies_df['year'].max())
+
+
+model = load_model()
+user_ids=([str(elem) for elem in list(range(1,611))])
+
+#st.set_page_config(initial_sidebar_state="collapsed") 
+st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+
+
 
 #############################
 ###### STREAMLIT APP ########
@@ -133,25 +140,54 @@ def display_poster(selected_movie, width = 200):
 
 # Main function
 def main():
-    st.title("Movie Recommendation System")
 
-    # User input for UserID
-    user_id = int(st.text_input("Enter User ID:"))
 
-    # User input for number of movie recommendations
-    movie_count = st.slider(label="movie_count", min_value=1, max_value=5)
+    col1, col2= st.columns([3, 1])
+    with col1:
+        st.title("""
+        Welcome user {0}
+        """.format(session.user_id))
+
+        st.text("")
+    with col2:
+        st.text("")
+        st.text("")
+        if st.button('Home'):
+            switch_page('Home')
+    user_id=int(session.user_id)
+
+    par1 = '<p style="font-family:sans-serif; color:Grey; font-size: 28px;">Please choose your preferences</p>'
+    st.markdown(par1, unsafe_allow_html=True)
+
+
+    st.text("")
+
+
+    st.text("")
+    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Choose how many movie recommendations do you want.</p>'
+    st.markdown(par2, unsafe_allow_html=True)
+    movie_count = st.slider(label="",min_value=1, max_value=5)
+
+    st.text("")
+    st.text("")
 
     # User input for filtering by year
-    min_year, max_year = st.slider("Filter by Year", min_year_df, max_year_df, (min_year_df, max_year_df))
+    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Filter by Year</p>'
+    st.markdown(par2, unsafe_allow_html=True)
+    min_year, max_year = st.slider("", min_year_df, max_year_df, (min_year_df, max_year_df))
 
     # User input for genre selection
-    selected_genres = st.multiselect("Select Genres", unique_genres)
+    st.text("")
+    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Select Genres</p>'
+    st.markdown(par2, unsafe_allow_html=True)
+    selected_genres = st.multiselect("", unique_genres)
 
     # Button recommendation
     buffer1, col1, buffer2 = st.columns([1.45, 1, 1])
     is_clicked = col1.button(label="Recommend")
 
     if is_clicked:
+        #user_id = int(st.text_input("Enter User ID:"))
         if not selected_genres:
             recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, start_year = min_year, end_year = max_year)
         else:
@@ -176,4 +212,7 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
+
+
+
 
