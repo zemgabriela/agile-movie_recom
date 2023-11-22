@@ -70,7 +70,7 @@ movies=list(tfidf["title"].unique())
 
 @st.cache_data()
 def load_model():
-    model = load('model.pkl') 
+    model = load('model_seq.pkl') 
 
     return model
 
@@ -134,23 +134,24 @@ url = "http://api.themoviedb.org/3/genre/movie/list?api_key=8dd915995c815307e7dd
 headers = {"accept": "application/json"}
 
 list_genres = requests.get(url, headers=headers).json()['genres']
-df_genres=pd.DataFrame(list_genres)
 
 
 
 
+import re
 
 
 if is_clicked:
     dataframe = recommend_next_movies(list_of_movies, model, n_movies, genre=None)
-    st.write(dataframe)
 
 
 
-    for title in dataframe["Title"]:
+
+    for title in dataframe:
 
 
         title=title.replace(" ","+")
+        title=re.sub(r'\(\d{4}(?:–\d{4})?\)', '', title).strip()
         url = "https://api.themoviedb.org/3/search/movie?query="+title+"&api_key=8dd915995c815307e7dd3dd84482e7b7"
 
         headers = {"accept": "application/json"}
@@ -176,9 +177,7 @@ if is_clicked:
             st.write(title)
             
             name_genre=""
-            for genre_id in response['genre_ids']:
-                aux_=df_genres.loc[df_genres["id"]==genre_id,"name"].iloc[0]
-                name_genre=name_genre+", "+aux_
+
             st.write(name_genre[1:])
             if len(description)>225:
                 st.write(description[:225]+"...")
