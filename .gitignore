@@ -1,5 +1,4 @@
 .ipynb_checkpoints/
 .DS_Store
 model_large.pkl
-model.pkl
-model_seq.pkl
+
