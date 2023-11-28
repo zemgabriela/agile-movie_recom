@@ -8,8 +8,8 @@ To be able to connect to the SQL Database of the project, you must follow the ne
    https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver16
 
 2. **Check the driver installation**: Open a terminal and run **'odbcinst -j'** and **odbcinst -q -d** (in Mac, look for the equivalence in your system).
-   The first command displays information about the ODBC driver manager, including the locations of the *odbc.ini* and *odbcinst.ini* files.
-   The second command should display something like: [ODBC Driver 18 for SQL Server]
+   - The first command displays information about the ODBC driver manager, including the locations of the *odbc.ini* and *odbcinst.ini* files.
+   - The second command should display something like: [ODBC Driver 18 for SQL Server]
 
 4. **Install pypyodbc library**: Install the library **pypyodbc**, which will be used to connect to the SQL Database, using the following command in terminal:
    ```pip install pypyodbc ```
