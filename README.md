@@ -12,7 +12,7 @@ To be able to connect to the SQL Database of the project, you must follow the ne
    The second command should display something like: [ODBC Driver 18 for SQL Server]
 
 4. **Install pypyodbc library**: Install the library **pypyodbc**, which will be used to connect to the SQL Database, using the following command in terminal:
-   pip install pypyodbc
+   ```diff pip install pypyodbc ```
    
 5. **Check installation of the library**: Check that you can correctly use the library *pypyodbc*. For that, execute this code in terminal:
    python -c "import pypyodbc"
