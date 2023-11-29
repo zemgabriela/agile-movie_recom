@@ -17,8 +17,7 @@ To be able to connect to the SQL Database of the project, you must follow the ne
 
    If you encounter an error like this one [OdbcNoLibrary: 'ODBC Library is not found. Is LD_LIBRARY_PATH set?'] when trying to import the library, follow the next steps:
      - Finding the Path of ODBC Driver Manager Library
-         - First, locate the ODBC driver manager library (like libodbc.dylib for UnixODBC)
-         - You can use the find command in the terminal to locate it. For example: find / -name libodbc.dylib 2>/dev/null
+         - First, locate the ODBC driver manager library (like libodbc.dylib for UnixODBC). You can use the find command in the terminal to locate it. For example: ```find / -name libodbc.dylib 2>/dev/null```
      - Setting DYLD_LIBRARY_PATH
          - Once you find the path to libodbc.dylib, you can set DYLD_LIBRARY_PATH to include this path
          - Open the shell configuration file. To do so you must use some of these commands in the terminal (for me it worked the one with .zprofile, but you can change them all): ```nano ~/.zprofile```, ```nano ~/.zshrc```, ```nano ~/.bash_profile```
