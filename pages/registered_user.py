@@ -162,6 +162,8 @@ def display_poster(selected_movie, width = 200):
             else:
                 st.write("No poster found for the selected movie")
 
+
+
 # Main function
 def main():
 
@@ -242,6 +244,9 @@ def main():
              st.warning("💬 Uh-oh! We couldn't find enough movies to meet your request. "
                    "Consider adjusting your filters for more options. "
                    "Happy searching! 😊")
+
+
+
 
 # Run the app
 if __name__ == "__main__":
