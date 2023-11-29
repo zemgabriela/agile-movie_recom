@@ -39,11 +39,11 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
     if start_year is not None:
         if end_year is not None:
             # Convert 'year' column to numeric before filtering
-            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce')
+            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
             movies_df = movies_df[(movies_df['year'] >= start_year) & (movies_df['year'] <= end_year)]
         else:
             # Convert 'year' column to numeric before filtering
-            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce')
+            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
             movies_df = movies_df[movies_df['year'] >= start_year]
 
     # Now predict scores for the (optionally) filtered items for the user
@@ -57,7 +57,7 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
 
     # Select the top n_movies
     top_indices = sorted_indices[:n_movies]
-    recommended_movies = movies_df.iloc[top_indices][['title','genres']].to_dict(orient='records')
+    recommended_movies = movies_df.iloc[top_indices][['title','genres','year']].to_dict(orient='records')
     predicted_ratings = pred[top_indices]
 
     return recommended_movies
@@ -98,44 +98,69 @@ def fetch_movie_info(movie_title):
 # Display Movie Information
 def display_movie_info(selected_movie, ownDB_movie):
     # Title
-    st.write(f"**Title:** {selected_movie['title']}")
+    if selected_movie is None: # If movie recommendation is not found in IMDB, we will retrieve info from our DB
+        st.write(f"**Title:** {ownDB_movie['title']}")
+    else:
+        st.write(f"**Title:** {selected_movie['title']}")
+
     # Year
-    st.write(f"**Year:** {selected_movie['year']}")
+    if selected_movie is None:
+        st.write(f"**Year:** {ownDB_movie['year']}")
+    else:
+        st.write(f"**Year:** {selected_movie['year']}")
+
     # Genres (now retrieving genres from our DB to match user optional genre filtering)
     st.write(f"**Genres:** {ownDB_movie['genres']}")
 
     # Directors
-    directors = selected_movie.get('director', [])
-    st.write(f"**Director(s):** {', '.join([director['name'] for director in directors])}")
+    if selected_movie is None:
+         st.write(f"**Director(s):** No information available")
+    else:
+        directors = selected_movie.get('director', [])
+        st.write(f"**Director(s):** {', '.join([director['name'] for director in directors])}")
+
     # Cast
-    actors = selected_movie.get('cast', [])
-    st.write(f"**Cast:** {', '.join([actor['name'] for actor in actors[:3]])}")
+    if selected_movie is None:
+        st.write(f"**Cast:** No information available")
+    else:
+        actors = selected_movie.get('cast', [])
+        st.write(f"**Cast:** {', '.join([actor['name'] for actor in actors[:3]])}")
 
     # IMDB Rating
-    st.write(f"**IMDB Rating:** {selected_movie.get('rating', 'N/A')}")
+    if selected_movie is None:
+        st.write(f"**IMDB Rating** No information available")
+    else:
+        st.write(f"**IMDB Rating:** {selected_movie.get('rating', 'N/A')}")
+   
     # Overview
-    ## Check if 'plot' is a list and convert it to a string
-    overview = selected_movie.get('plot', ['N/A'])
-    if isinstance(overview, list):
-        overview = ', '.join(overview)
+    if selected_movie is not None:
+        ## Check if 'plot' is a list and convert it to a string
+        overview = selected_movie.get('plot', ['N/A'])
+        if isinstance(overview, list):
+            overview = ', '.join(overview)
 
     ## Remove brackets from the overview
-    overview = overview.strip('[]')
+    if selected_movie is not None:
+        overview = overview.strip('[]')
 
     ## Limit overview length
-    if len(overview)>225:
-                    st.write(f"**Overview:** {overview[:225]}...")
+    if selected_movie is None:
+         st.write(f"**Overview:** No information available")
     else:
+        if len(overview)>225:
+                    st.write(f"**Overview:** {overview[:225]}...")
+        else:
                     st.write(f"**Overview:** {overview}")
 
 # Display Poster Image
 def display_poster(selected_movie, width = 200):
-    if 'cover url' in selected_movie.keys():
-        poster_url = selected_movie.get('full-size cover url', None)
-        if poster_url:
-            st.image(poster_url, width = width)
-        else:
-            st.warning("No poster found for the selected movie")
+    if selected_movie is not None:
+        if 'cover url' in selected_movie.keys():
+            poster_url = selected_movie.get('full-size cover url', None)
+            if poster_url:
+                st.image(poster_url, width = width)
+            else:
+                st.write("No poster found for the selected movie")
 
 # Main function
 def main():
@@ -193,7 +218,7 @@ def main():
             recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, selected_genres, min_year, max_year)
 
         # Fetch movie information
-        movie_info_list = [fetch_movie_info(movie['title']) for movie in recommendations if fetch_movie_info(movie['title']) is not None]
+        movie_info_list = [fetch_movie_info(movie['title']) for movie in recommendations]
 
         # Check if any movies were found
         if movie_info_list:
