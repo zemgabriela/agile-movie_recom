@@ -31,7 +31,7 @@ def load_model():
     return model_seq
 
 
-def recommend_next_movies(model, list_of_movies, n_movies, movies_df, genres=None, start_year=None, end_year=None):
+def recommend_next_movies(model_seq, list_of_movies, n_movies, movies_df, genres=None, start_year=None, end_year=None):
     
     indices_movies = movies_df[movies_df['title'].isin(list_of_movies)]['item_id'] #we store the indices of the movies in list of movies
     
