@@ -57,7 +57,7 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
 
     # Select the top n_movies
     top_indices = sorted_indices[:n_movies]
-    recommended_movies = movies_df.iloc[top_indices]['title'].tolist()
+    recommended_movies = movies_df.iloc[top_indices][['title','genres']].to_dict(orient='records')
     predicted_ratings = pred[top_indices]
 
     return recommended_movies
@@ -96,14 +96,13 @@ def fetch_movie_info(movie_title):
         return None
 
 # Display Movie Information
-def display_movie_info(selected_movie):
+def display_movie_info(selected_movie, ownDB_movie):
     # Title
     st.write(f"**Title:** {selected_movie['title']}")
     # Year
     st.write(f"**Year:** {selected_movie['year']}")
-    # Genres
-    genres = selected_movie.get('genres', [])
-    st.write(f"**Genres:** {', '.join(genres)}")
+    # Genres (now retrieving genres from our DB to match user optional genre filtering)
+    st.write(f"**Genres:** {ownDB_movie['genres']}")
 
     # Directors
     directors = selected_movie.get('director', [])
@@ -194,17 +193,17 @@ def main():
             recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, selected_genres, min_year, max_year)
 
         # Fetch movie information
-        movie_info_list = [fetch_movie_info(title) for title in recommendations if fetch_movie_info(title) is not None]
+        movie_info_list = [fetch_movie_info(movie['title']) for movie in recommendations if fetch_movie_info(movie['title']) is not None]
 
         # Check if any movies were found
         if movie_info_list:
-            for selected_movie in movie_info_list:
+             for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
                 st.markdown("---")
                 col1, col2= st.columns(2)
                 with col1:
                     display_poster(selected_movie)
                 with col2:
-                    display_movie_info(selected_movie)
+                    display_movie_info(selected_movie, ownDB_movie)
 
         else:
             st.warning("No movies found with the entered titles")
