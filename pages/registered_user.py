@@ -220,7 +220,7 @@ def main():
         # Fetch movie information
         movie_info_list = [fetch_movie_info(movie['title']) for movie in recommendations]
 
-        # Check if any movies were found
+        # Check if any movies were found, print warnings if necessary
         if movie_info_list:
              for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
                 st.markdown("---")
@@ -230,8 +230,18 @@ def main():
                 with col2:
                     display_movie_info(selected_movie, ownDB_movie)
 
+        # Show a warning when no recommendations match the applied filters
         else:
-            st.warning("No movies found with the entered titles")
+            st.warning("💬 Oops! It looks like we couldn't find any movies with the entered filters. "
+               "No worries, though! You can enhance your search experience by tweaking your filters. "
+               "Consider trying a different year, exploring a new genre, or expanding your search criteria. "
+               "Happy searching! 😊")
+        
+        # Show a warning when the number of recommendations is less than the requested count
+        if len(recommendations) < movie_count and len(recommendations) != 0:
+             st.warning("💬 Uh-oh! We couldn't find enough movies to meet your request. "
+                   "Consider adjusting your filters for more options. "
+                   "Happy searching! 😊")
 
 # Run the app
 if __name__ == "__main__":
