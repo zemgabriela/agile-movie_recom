@@ -40,3 +40,4 @@ ____
 1. Swith to the main branch: ```git checkout main```
 2. Bring the specific file from your branch: ```git checkout your_branch -- path/to/yourfile.ext```
 3. Git commit and push for updating the repository
+
