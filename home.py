@@ -6,6 +6,8 @@ import requests
 import pandas as pd
 import numpy as np
 from streamlit_extras.switch_page_button import switch_page
+from DatabaseRelatedFunctions import *
+
 
 
 
@@ -45,5 +47,6 @@ if st.button("I'm a new a User"):
 
  
 st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+
 
 
