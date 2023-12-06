@@ -9,8 +9,6 @@ from streamlit_extras.switch_page_button import switch_page
 from DatabaseRelatedFunctions import *
 
 
-
-
 user_ids=([str(elem) for elem in list(range(1,611))])
 
 st.title("""
@@ -44,8 +42,10 @@ st.text("")
 if st.button("I'm a new a User"):
     switch_page('new_user')
 
-
- 
+if st.button("You don't have an account? Register here!"):
+    switch_page('user_registration')
+if st.button("You already have an account? Log in here!"):
+    switch_page('user_login')
 st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
 
 

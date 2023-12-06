@@ -26,11 +26,16 @@ def connectToDatabase():
 def addUser(newUser, newPassword):
      cursor.execute("INSERT INTO Users (userName, password) VALUES (?, ?)", (newUser, newPassword))
      conn.commit()
+     
 def login_user(userName, password):
     cursor.execute('SELECT * FROM Users WHERE userName =? AND password = ?', (userName, password))
     data = cursor.fetchall()
     return data
-    
+
+def checkUserId(userName):
+    cursor.execute('SELECT count(distinct userName) FROM Users WHERE userName=?', (userName,))
+    count = cursor.fetchone()[0]
+    return count > 0
 def get_table(tableName):
    cursor.execute(f"SELECT * FROM {tableName}")
     #data will be a list of tuples
