@@ -38,12 +38,8 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
         movies_df = movies_df[movies_df['genres'].apply(filter_condition)]
     if start_year is not None:
         if end_year is not None:
-            # Convert 'year' column to numeric before filtering
-            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
             movies_df = movies_df[(movies_df['year'] >= start_year) & (movies_df['year'] <= end_year)]
         else:
-            # Convert 'year' column to numeric before filtering
-            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
             movies_df = movies_df[movies_df['year'] >= start_year]
 
     # Now predict scores for the (optionally) filtered items for the user
@@ -66,8 +62,8 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
 unique_genres=['Action', 'Adventure', 'Animation', 'Children', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'IMAX', 'Musical', 
                 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'] 
 
-# Min and Max Year df
-movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce')
+# Min and Max Year df / Converting year to int
+movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
 min_year_df=int(movies_df['year'].min())
 max_year_df=int(movies_df['year'].max())
 
@@ -85,31 +81,39 @@ st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </st
 #############################
 
 # Fetch Movie Information
-def fetch_movie_info(movie_title):
+def fetch_movie_info(movie_title, year_release):
     ia = IMDb()
+
+    # Search for the movie using both title and year
     movies = ia.search_movie(movie_title)
+    
     if movies:
-        selected_movie = ia.get_movie(movies[0].movieID)
-        ia.update(selected_movie, info=['main', 'vote details'])
-        return selected_movie
+        # Filter movies based on the provided year
+        matching_movies = [movie for movie in movies if str(year_release) in str(movie.get('year', ''))]
+
+        if matching_movies:
+            selected_movie = ia.get_movie(matching_movies[0].movieID)
+            ia.update(selected_movie, info=['main', 'vote details'])
+            return selected_movie
+        else:
+            # If no matching movie found for the specified year, return None
+            return None
     else:
         return None
 
+
 # Display Movie Information
 def display_movie_info(selected_movie, ownDB_movie):
-    # Title
-    if selected_movie is None: # If movie recommendation is not found in IMDB, we will retrieve info from our DB
-        st.write(f"**Title:** {ownDB_movie['title']}")
-    else:
-        st.write(f"**Title:** {selected_movie['title']}")
+    # Title (now retrieving from our DB to decrease runtime)
+    #if selected_movie is None: # If movie recommendation is not found in IMDB, we will retrieve info from our DB
+    st.write(f"**Title:** {ownDB_movie['title']}")
+    #else:
+        #st.write(f"**Title:** {selected_movie['title']}")
 
-    # Year
-    if selected_movie is None:
-        st.write(f"**Year:** {ownDB_movie['year']}")
-    else:
-        st.write(f"**Year:** {selected_movie['year']}")
+    # Year (now retrieving from our DB to decrease runtime)
+    st.write(f"**Year:** {ownDB_movie['year']}")
 
-    # Genres (now retrieving genres from our DB to match user optional genre filtering)
+    # Genres (now retrieving genres from our DB to match user optional genre filtering and decrease runtime)
     st.write(f"**Genres:** {ownDB_movie['genres']}")
 
     # Directors
@@ -220,7 +224,7 @@ def main():
             recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, selected_genres, min_year, max_year)
 
         # Fetch movie information
-        movie_info_list = [fetch_movie_info(movie['title']) for movie in recommendations]
+        movie_info_list = [fetch_movie_info(movie['title'], movie['year']) for movie in recommendations]
 
         # Check if any movies were found, print warnings if necessary
         if movie_info_list:
