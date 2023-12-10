@@ -33,37 +33,46 @@ def load_model():
 
 def recommend_next_movies(model_seq, list_of_movies, n_movies, movies_df, genres=None, start_year=None, end_year=None):
     
-    indices_movies = movies_df[movies_df['title'].isin(list_of_movies)]['item_id'] #we store the indices of the movies in list of movies
+    indices_movies = movies_df[movies_df['title'].isin(list_of_movies)]['item_id']
     
-    # Apply genre/year filters before making predictions
-    if genres is not None:
-        filter_condition = lambda x: any(genre.lower() in x.lower() for genre in genres)
-        movies_df = movies_df[movies_df['genres'].apply(filter_condition)]
-    if start_year is not None:
-        if end_year is not None:
-            movies_df = movies_df[(movies_df['year'] >= start_year) & (movies_df['year'] <= end_year)]
+    # Check if indices_movies is not empty
+    if not indices_movies.empty:
+        # Apply genre/year filters before making predictions
+        if genres is not None:
+            filter_condition = lambda x: any(genre.lower() in x.lower() for genre in genres)
+            movies_df = movies_df[movies_df['genres'].apply(filter_condition)]
+        if start_year is not None:
+            if end_year is not None:
+                movies_df = movies_df[(movies_df['year'] >= start_year) & (movies_df['year'] <= end_year)]
+            else:
+                movies_df = movies_df[movies_df['year'] >= start_year]
+
+        # END OF FILTERING PART
+
+        # Check if item_ids is not empty
+        item_ids = movies_df['item_id'].values.reshape(-1, 1)
+        if not item_ids.size == 0:
+            # Perform the predictions
+            pred = model_seq.predict(sequences=np.array(indices_movies), item_ids=item_ids)
+
+            sorted_indices = np.argsort(pred)[::-1]
+            top_indices = sorted_indices[:n_movies]
+
+            recommended_movies = movies_df.iloc[top_indices][['title', 'genres', 'year']].to_dict(orient='records')
+
+            return recommended_movies
         else:
-            movies_df = movies_df[movies_df['year'] >= start_year]
-    
-    #END OF FILTERING PART
-    
-    #perform the predictions
-    item_ids = movies_df['item_id'].values.reshape(-1, 1)
-    pred = model_seq.predict(sequences=np.array(indices_movies), item_ids=item_ids)
-    
-    sorted_indices = np.argsort(pred)[::-1]
-    top_indices = sorted_indices[:n_movies]
-    
-    recommended_movies = movies_df.iloc[top_indices][['title','genres','year']].to_dict(orient='records')
-    
-    return recommended_movies
+            return []  # Return an empty list if item_ids is empty - no movies found with the selected year range and genres
+    else:
+        return []  # Return an empty list if indices_movies is empty - no favourite movies were selected
+
 
 # Unique Genres df
 unique_genres=['Action', 'Adventure', 'Animation', 'Children', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'IMAX', 'Musical', 
                 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'] 
 
-# Min and Max Year df
-movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce')
+# Min and Max Year df / Converting year to int
+movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
 min_year_df=int(movies_df['year'].min())
 max_year_df=int(movies_df['year'].max())
 
@@ -92,19 +101,16 @@ def fetch_movie_info(movie_title):
 
 # Display Movie Information
 def display_movie_info(selected_movie, ownDB_movie):
-    # Title
-    if selected_movie is None: # If movie recommendation is not found in IMDB, we will retrieve info from our DB
-        st.write(f"**Title:** {ownDB_movie['title']}")
-    else:
-        st.write(f"**Title:** {selected_movie['title']}")
+    # Title (now retrieving from our DB to decrease runtime)
+    #if selected_movie is None: # If movie recommendation is not found in IMDB, we will retrieve info from our DB
+    st.write(f"**Title:** {ownDB_movie['title']}")
+    #else:
+        #st.write(f"**Title:** {selected_movie['title']}")
 
-    # Year
-    if selected_movie is None:
-        st.write(f"**Year:** {ownDB_movie['year']}")
-    else:
-        st.write(f"**Year:** {selected_movie['year']}")
+    # Year (now retrieving from our DB to decrease runtime)
+    st.write(f"**Year:** {ownDB_movie['year']}")
 
-    # Genres (now retrieving genres from our DB to match user optional genre filtering)
+    # Genres (now retrieving genres from our DB to match user optional genre filtering and decrease runtime)
     st.write(f"**Genres:** {ownDB_movie['genres']}")
 
     # Directors
@@ -210,38 +216,42 @@ def main():
     buffer1, col1, buffer2 = st.columns([1.45, 1, 1])
     is_clicked = col1.button(label="Recommend")
 
+    # Call recommender model after clicking "Recommend"
     if is_clicked:
-        
-        if not selected_genres:
-            recommendations = recommend_next_movies(model_seq, list_of_movies, movie_count, movies_df, start_year = min_year, end_year = max_year)
+        if not list_of_movies:  # Check if the user hasn't selected any favorite movies
+            st.warning("💡 Hold on! It seems you forgot to pick your favorite movies. "
+            "Select at least one favorite movie to get personalized recommendations. 🎬")
         else:
-            recommendations = recommend_next_movies(model_seq, list_of_movies, movie_count, movies_df, selected_genres, min_year, max_year)
+            if not selected_genres:
+                recommendations = recommend_next_movies(model_seq, list_of_movies, movie_count, movies_df, start_year = min_year, end_year = max_year)
+            else:
+                recommendations = recommend_next_movies(model_seq, list_of_movies, movie_count, movies_df, selected_genres, min_year, max_year)
 
-        # Fetch movie information
-        movie_info_list = [fetch_movie_info(movie['title']) for movie in recommendations]
+            # Fetch movie information
+            movie_info_list = [fetch_movie_info(movie['title']) for movie in recommendations]
 
-        # Check if any movies were found, print warnings if necessary
-        if movie_info_list:
-             for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
-                st.markdown("---")
-                col1, col2= st.columns(2)
-                with col1:
-                    display_poster(selected_movie)
-                with col2:
-                    display_movie_info(selected_movie, ownDB_movie)
+            # Check if any movies were found, print warnings if necessary
+            if movie_info_list:
+                for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
+                    st.markdown("---")
+                    col1, col2= st.columns(2)
+                    with col1:
+                        display_poster(selected_movie)
+                    with col2:
+                        display_movie_info(selected_movie, ownDB_movie)
 
-        # Show a warning when no recommendations match the applied filters
-        else:
-            st.warning("💬 Oops! It looks like we couldn't find any movies with the entered filters. "
-               "No worries, though! You can enhance your search experience by tweaking your filters. "
-               "Consider trying a different year, exploring a new genre, or expanding your search criteria. "
-               "Happy searching! 😊")
+            # Show a warning when no recommendations match the applied filters
+            else:
+                st.warning("💬 Oops! It looks like we couldn't find any movies with the entered filters. "
+                           "No worries, though! You can enhance your search experience by tweaking your filters. "
+                           "Consider trying a different year, exploring a new genre, or expanding your search criteria. "
+                        "Happy searching! 😊")
         
-        # Show a warning when the number of recommendations is less than the requested count
-        if len(recommendations) < movie_count and len(recommendations) != 0:
-             st.warning("💬 Uh-oh! We couldn't find enough movies to meet your request. "
-                   "Consider adjusting your filters for more options. "
-                   "Happy searching! 😊")
+            # Show a warning when the number of recommendations is less than the requested count
+            if len(recommendations) < movie_count and len(recommendations) != 0:
+                st.warning("💬 Uh-oh! We couldn't find enough movies to meet your request. "
+                           "Consider adjusting your filters for more options. "
+                           "Happy searching! 😊")
 
 
 
