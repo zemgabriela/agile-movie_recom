@@ -7,12 +7,13 @@ import numpy as np
 from streamlit_extras.switch_page_button import switch_page
 from joblib import dump, load
 from imdb import IMDb
-from DatabaseRelatedFunctions import *
+import DatabaseRelatedFunctions
+import Shared_Variables
 
 # Load movies.csv
 def load_movie_data():
 
-    movies_df = get_table('Movies')
+    movies_df = DatabaseRelatedFunctions.get_table('Movies')
     movies_df.columns = ['item_id', 'title', 'genres']
 
     movies_df['year'] = movies_df['title'].str.extract(r'\((\d{4}(?:–\d{4})?)\)')  
@@ -24,7 +25,6 @@ def load_movie_data():
 
     return movies_df
 
-connectToDatabase()
 movies_df = load_movie_data()
 
 
@@ -178,8 +178,8 @@ def main():
     col1, col2= st.columns([3, 1])
     with col1:
         st.title("""
-        Welcome user {0}
-        """.format(session.user_id))
+        Welcome back, {0}!
+        """.format(Shared_Variables.userName))
 
         st.text("")
     with col2:
@@ -187,7 +187,8 @@ def main():
         st.text("")
         if st.button('Home'):
             switch_page('Home')
-    user_id=int(session.user_id)
+
+    user_id=DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)
 
     par1 = '<p style="font-family:sans-serif; color:Grey; font-size: 28px;">Please choose your preferences</p>'
     st.markdown(par1, unsafe_allow_html=True)
@@ -258,7 +259,6 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
-    closeConnectionToDatabase()
 
 
 

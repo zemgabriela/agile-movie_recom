@@ -7,12 +7,13 @@ import numpy as np
 from streamlit_extras.switch_page_button import switch_page
 from joblib import dump, load
 from imdb import IMDb
-from DatabaseRelatedFunctions import *
+import DatabaseRelatedFunctions
+import Shared_Variables
 
 
 # Load movies.csv
 def load_movie_data():
-    movies_df = get_table('Movies')
+    movies_df = DatabaseRelatedFunctions.get_table('Movies')
     movies_df.columns = ['item_id', 'title', 'genres']
 
     movies_df['year'] = movies_df['title'].str.extract(r'\((\d{4}(?:–\d{4})?)\)')  
@@ -24,7 +25,7 @@ def load_movie_data():
 
     return movies_df
 
-connectToDatabase()
+
 movies_df = load_movie_data()
 
 
@@ -180,6 +181,9 @@ def main():
 
 
 
+    #st.set_page_config(initial_sidebar_state="collapsed") 
+    st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+
     movies.sort()
     par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Select your favorites movies.</p>'
     st.markdown(par2, unsafe_allow_html=True)
@@ -252,4 +256,3 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
-    closeConnectionToDatabase()
