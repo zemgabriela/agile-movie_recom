@@ -174,7 +174,9 @@ def display_poster(selected_movie, width = 200):
 
 # Main function
 def main():
-
+    #if somehow a user that is not logged-in or is not within the 610 user id we have info about, this redirects them to home page
+    if(Shared_Variables.userName == None or DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)>Shared_Variables.max_id_user_model):
+        switch_page('home')
     
     col1, col2= st.columns([3, 1])
     with col1:

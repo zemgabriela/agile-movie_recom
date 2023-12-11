@@ -185,6 +185,9 @@ def main():
         if st.button('Home'):
             switch_page('Home')
 
+    #st.set_page_config(initial_sidebar_state="collapsed") 
+    st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+
 
 
     movies.sort()

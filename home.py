@@ -10,7 +10,7 @@ import DatabaseRelatedFunctions
 import Shared_Variables
 
 
-if (Shared_Variables.loggedIn == True) and (DatabaseRelatedFunctions.getUserId(userName)<= Shared_Variables.max_id_user_model):
+if (Shared_Variables.loggedIn == True) and (DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)<= Shared_Variables.max_id_user_model):
     switch_page('registered_user')
 else:        
     st.title("""
