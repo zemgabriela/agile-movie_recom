@@ -8,7 +8,11 @@ from streamlit_extras.switch_page_button import switch_page
 from joblib import dump, load
 from imdb import IMDb
 
-# Load movies.csv
+#############################
+###### BACKEND ########
+#############################
+
+# Function to load movies.csv
 def load_movie_data():
     movies_df = pd.read_csv('ml-latest-small/movies.csv', sep=',', names=['item_id', 'title', 'genres'], engine='python',skiprows=1)
 
@@ -24,13 +28,14 @@ def load_movie_data():
 movies_df = load_movie_data()
 
 
+# Function to load recommender model
 @st.cache_data()
 def load_model():
     model = load('model.pkl') 
 
     return model
 
-
+# Function to recommend movies
 def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None, start_year=None, end_year=None):
     # Apply genre/year filters before making predictions
     if genres is not None:
@@ -226,15 +231,46 @@ def main():
         # Fetch movie information
         movie_info_list = [fetch_movie_info(movie['title'], movie['year']) for movie in recommendations]
 
+        # Dictionary to store feedback for each movie
+        movie_feedback = {movie['title']: {'thumbs_up': False, 'thumbs_down': False} for movie in recommendations}
+
         # Check if any movies were found, print warnings if necessary
         if movie_info_list:
-             for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
+            for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
                 st.markdown("---")
                 col1, col2= st.columns(2)
                 with col1:
-                    display_poster(selected_movie)
+                    display_poster(selected_movie)     
                 with col2:
                     display_movie_info(selected_movie, ownDB_movie)
+
+            with st.form("Feedback"):
+                for selected_movie, ownDB_movie in zip(movie_info_list, recommendations):
+                    st.write(f"Do you like {ownDB_movie['title']} as a movie recommendation?")
+        
+                    # Use the movie title as a key to get the feedback status
+                    feedback_key = f"feedback_{ownDB_movie['title']}"
+        
+                    # Radio buttons for thumbs up and thumbs down
+                    feedback_status = st.radio("", ["👍 Yes, I like it!", "👎 No, I don't like it!"], key=feedback_key)
+        
+                    # Update feedback status in the dictionary
+                    if feedback_status == "👍 Yes, I like it!":
+                        thumbs_up_feedback = True
+                        thumbs_down_feedback = False
+                    else:
+                        thumbs_up_feedback = False
+                        thumbs_down_feedback = True
+        
+                    movie_feedback[ownDB_movie['title']]['thumbs_up'] = thumbs_up_feedback
+                    movie_feedback[ownDB_movie['title']]['thumbs_down'] = thumbs_down_feedback
+
+                st.write("🌟 We appreciate your feedback! "
+                    "Based on your preferences, we will provide "
+                    "you with even better movie recommendations in the next set. Enjoy your movies!")
+                
+                # Submit button
+                submitted = st.form_submit_button("Submit")                
 
         # Show a warning when no recommendations match the applied filters
         else:

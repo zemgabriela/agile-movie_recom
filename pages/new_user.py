@@ -8,7 +8,11 @@ from streamlit_extras.switch_page_button import switch_page
 from joblib import dump, load
 from imdb import IMDb
 
-# Load movies.csv
+#############################
+###### BACKEND ########
+#############################
+
+# Function to load movies.csv
 def load_movie_data():
     movies_df = pd.read_csv('ml-latest-small/movies.csv', sep=',', names=['item_id', 'title', 'genres'], engine='python',skiprows=1)
 
@@ -24,6 +28,7 @@ def load_movie_data():
 movies_df = load_movie_data()
 
 
+# Function to load recommender model
 @st.cache_data()
 def load_model():
     model_seq = load('model_seq.pkl') 
@@ -31,6 +36,7 @@ def load_model():
     return model_seq
 
 
+# Function to recommend movies
 def recommend_next_movies(model_seq, list_of_movies, n_movies, movies_df, genres=None, start_year=None, end_year=None):
     
     indices_movies = movies_df[movies_df['title'].isin(list_of_movies)]['item_id']
