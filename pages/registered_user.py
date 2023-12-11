@@ -7,10 +7,14 @@ import numpy as np
 from streamlit_extras.switch_page_button import switch_page
 from joblib import dump, load
 from imdb import IMDb
+import DatabaseRelatedFunctions
+import Shared_Variables
 
-# Load movies.csv
+# Load movie data from the SQL database
 def load_movie_data():
-    movies_df = pd.read_csv('ml-latest-small/movies.csv', sep=',', names=['item_id', 'title', 'genres'], engine='python',skiprows=1)
+    
+    movies_df = DatabaseRelatedFunctions.get_table('Movies')
+    movies_df.columns = ['item_id', 'title', 'genres']
 
     movies_df['year'] = movies_df['title'].str.extract(r'\((\d{4}(?:–\d{4})?)\)')  
     movies_df['year'] = movies_df['year'].where(movies_df['year'].str.len() == 4, None)  
@@ -171,20 +175,24 @@ def display_poster(selected_movie, width = 200):
 # Main function
 def main():
 
-
+    
     col1, col2= st.columns([3, 1])
     with col1:
         st.title("""
-        Welcome user {0}
-        """.format(session.user_id))
+        Welcome {0}
+        """.format(Shared_Variables.userName))
 
         st.text("")
     with col2:
         st.text("")
         st.text("")
-        if st.button('Home'):
+        #Log Off Botton added
+        if st.button('Log Off'):
+            Shared_Variables.loggedIn = False
+            Shared_Variables.userName = None
             switch_page('Home')
-    user_id=int(session.user_id)
+
+    user_id=DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)
 
     par1 = '<p style="font-family:sans-serif; color:Grey; font-size: 28px;">Please choose your preferences</p>'
     st.markdown(par1, unsafe_allow_html=True)

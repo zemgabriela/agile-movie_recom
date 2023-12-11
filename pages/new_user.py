@@ -7,10 +7,15 @@ import numpy as np
 from streamlit_extras.switch_page_button import switch_page
 from joblib import dump, load
 from imdb import IMDb
+import DatabaseRelatedFunctions
+import Shared_Variables
 
-# Load movies.csv
+# Load movies data from the sql database
+
 def load_movie_data():
-    movies_df = pd.read_csv('ml-latest-small/movies.csv', sep=',', names=['item_id', 'title', 'genres'], engine='python',skiprows=1)
+
+    movies_df = DatabaseRelatedFunctions.get_table('Movies')
+    movies_df.columns = ['item_id', 'title', 'genres']
 
     movies_df['year'] = movies_df['title'].str.extract(r'\((\d{4}(?:–\d{4})?)\)')  
     movies_df['year'] = movies_df['year'].where(movies_df['year'].str.len() == 4, None)  
