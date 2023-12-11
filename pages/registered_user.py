@@ -185,7 +185,9 @@ def main():
     with col2:
         st.text("")
         st.text("")
-        if st.button('Home'):
+        if st.button('Log Off'):
+            Shared_Variables.loggedIn = False
+            Shared_Variables.userName = None
             switch_page('Home')
 
     user_id=DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)

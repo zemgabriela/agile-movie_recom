@@ -60,8 +60,12 @@ def get_table(tableName):
     data = pd.DataFrame(data, columns=column_names)
     closeConnectionToDatabase()
     return data
+
 #Given a userName returns its userID
 def getUserId(userName):
+    #if userName equals none the functions returns infinity (This will be useful to code if statements related with in which we'll use this function)
+    if userName == None:
+        return float(inf)
     connectToDatabase()
     cursor.execute(f"SELECT userID FROM Users WHERE username = '{userName}'")
     result = cursor.fetchone()

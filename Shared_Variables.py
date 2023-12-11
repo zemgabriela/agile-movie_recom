@@ -1,5 +1,5 @@
 global userName
-userName = "Amber Gallegos"
+userName = None
 global max_id_user_model
 max_id_user_model = 610
 global loggedIn
