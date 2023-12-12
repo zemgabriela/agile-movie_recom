@@ -10,10 +10,12 @@ from imdb import IMDb
 import DatabaseRelatedFunctions
 import Shared_Variables
 
-# Load movie data from the SQL database
+# Load movies.csv
 def load_movie_data():
-    
+
     movies_df = DatabaseRelatedFunctions.get_table('Movies')
+
+
     movies_df.columns = ['item_id', 'title', 'genres']
 
     movies_df['year'] = movies_df['title'].str.extract(r'\((\d{4}(?:–\d{4})?)\)')  
@@ -28,6 +30,11 @@ def load_movie_data():
 movies_df = load_movie_data()
 
 
+def load_users():
+    df_users=DatabaseRelatedFunctions.get_table('Users')
+    #st.write(df_users.columns)
+    n_users=df_users['userid'].nunique()
+    return(n_users)
 @st.cache_data()
 def load_model():
     model = load('model.pkl') 
@@ -42,8 +49,12 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
         movies_df = movies_df[movies_df['genres'].apply(filter_condition)]
     if start_year is not None:
         if end_year is not None:
+            # Convert 'year' column to numeric before filtering
+            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
             movies_df = movies_df[(movies_df['year'] >= start_year) & (movies_df['year'] <= end_year)]
         else:
+            # Convert 'year' column to numeric before filtering
+            movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
             movies_df = movies_df[movies_df['year'] >= start_year]
 
     # Now predict scores for the (optionally) filtered items for the user
@@ -62,12 +73,64 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
 
     return recommended_movies
 
+
+
+
+
+def recommended_movies_by_user_last(model, user_id, n_movies, movies_df, w_vector=np.ones(9742), genres=None, start_year=None, end_year=None,): 
+    #here w_vector is the weight vector of that user. If nothing is just the vector of ones.
+    # Apply genre/year filters before making predictions
+    if genres is not None:
+        filter_condition = lambda x: any(genre.lower() in x.lower() for genre in genres)
+        movies_df = movies_df[movies_df['genres'].apply(filter_condition)]
+    if start_year is not None:
+        if end_year is not None:
+            movies_df = movies_df[(movies_df['year'] >= start_year) & (movies_df['year'] <= end_year)]
+        else:
+            movies_df = movies_df[movies_df['year'] >= start_year]
+
+    # Now predict scores for the (optionally) filtered items for the user
+    filtered_movie_ids = movies_df['item_id'].values
+
+
+    w_vector=w_vector[list(movies_df.index)]
+    pred = model.predict(user_ids=np.array([user_id]*len(filtered_movie_ids)), item_ids=filtered_movie_ids)
+    pred=pred*w_vector #according to our idea, in this way we remove movies with the bad feedback.
+
+    # Sort predicted ratings in descending order
+    sorted_indices = np.argsort(pred)[::-1]
+    # Select the top n_movies
+    top_indices = sorted_indices[:n_movies]
+    recommended_movies = movies_df.iloc[top_indices][['title','genres','year']].to_dict(orient='records')
+    predicted_ratings = pred[top_indices]
+
+    return recommended_movies
+
+unique_movies = movies_df['item_id'].nunique()
+unique_users= load_users()
+
+
+#let's create the function that change the weights according to the star feedback
+
+def update_weights(user_id,list_titles,feedbacks,W_matrix,movies_df):
+    i=0
+    #titles contains the list of titles that has a feedback, while feedbacks is a vector that is of the form [4/5,5/5,1/5,...]
+
+    for title in list_titles:
+        index=movies_df.index[movies_df['title']==title] 
+        W_matrix[index,user_id]=feedbacks[i]
+        i+=1
+    return W_matrix
+
 # Unique Genres df
+
+# !!! Gotta Change this part so it can dynamically adapt
+
 unique_genres=['Action', 'Adventure', 'Animation', 'Children', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'IMAX', 'Musical', 
                 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'] 
 
-# Min and Max Year df / Converting year to int
-movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce').astype('Int64')
+# Min and Max Year df
+movies_df['year'] = pd.to_numeric(movies_df['year'], errors='coerce')
 min_year_df=int(movies_df['year'].min())
 max_year_df=int(movies_df['year'].max())
 
@@ -105,19 +168,21 @@ def fetch_movie_info(movie_title, year_release):
     else:
         return None
 
-
 # Display Movie Information
 def display_movie_info(selected_movie, ownDB_movie):
-    # Title (now retrieving from our DB to decrease runtime)
-    #if selected_movie is None: # If movie recommendation is not found in IMDB, we will retrieve info from our DB
-    st.write(f"**Title:** {ownDB_movie['title']}")
-    #else:
-        #st.write(f"**Title:** {selected_movie['title']}")
+    # Title
+    if selected_movie is None: # If movie recommendation is not found in IMDB, we will retrieve info from our DB
+        st.write(f"**Title:** {ownDB_movie['title']}")
+    else:
+        st.write(f"**Title:** {selected_movie['title']}")
 
-    # Year (now retrieving from our DB to decrease runtime)
-    st.write(f"**Year:** {ownDB_movie['year']}")
+    # Year
+    if selected_movie is None:
+        st.write(f"**Year:** {ownDB_movie['year']}")
+    else:
+        st.write(f"**Year:** {selected_movie['year']}")
 
-    # Genres (now retrieving genres from our DB to match user optional genre filtering and decrease runtime)
+    # Genres (now retrieving genres from our DB to match user optional genre filtering)
     st.write(f"**Genres:** {ownDB_movie['genres']}")
 
     # Directors
@@ -172,100 +237,123 @@ def display_poster(selected_movie, width = 200):
 
 
 
-# Main function
-def main():
-    #if somehow a user that is not logged-in or is not within the 610 user id we have info about, this redirects them to home page
-    if(Shared_Variables.userName == None or DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)>Shared_Variables.max_id_user_model):
-        switch_page('home')
-    
-    col1, col2= st.columns([3, 1])
-    with col1:
-        st.title("""
-        Welcome {0}
-        """.format(Shared_Variables.userName))
 
-        st.text("")
-    with col2:
-        st.text("")
-        st.text("")
-        #Log Off Botton added
-        if st.button('Log Off'):
-            Shared_Variables.loggedIn = False
-            Shared_Variables.userName = None
-            switch_page('Home')
-
-    user_id=DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)
-
-    par1 = '<p style="font-family:sans-serif; color:Grey; font-size: 28px;">Please choose your preferences</p>'
-    st.markdown(par1, unsafe_allow_html=True)
-
+col1, col2= st.columns([3, 1])
+with col1:
+    st.title("""
+    Welcome back, {0}!
+    """.format(Shared_Variables.userName))
 
     st.text("")
-
-
-    st.text("")
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Choose how many movie recommendations do you want.</p>'
-    st.markdown(par2, unsafe_allow_html=True)
-    movie_count = st.slider(label="",min_value=1, max_value=5)
-
+with col2:
     st.text("")
     st.text("")
+    if st.button('Log Off'):
+        Shared_Variables.loggedIn = False
+        Shared_Variables.userName = None
+        switch_page('Home')
 
-    # User input for filtering by year
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Filter by Year</p>'
-    st.markdown(par2, unsafe_allow_html=True)
-    min_year, max_year = st.slider("", min_year_df, max_year_df, (min_year_df, max_year_df))
+user_id=DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)
 
-    # User input for genre selection
-    st.text("")
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Select Genres</p>'
-    st.markdown(par2, unsafe_allow_html=True)
-    selected_genres = st.multiselect("", unique_genres)
+par1 = '<p style="font-family:sans-serif; color:Grey; font-size: 28px;">Please choose your preferences</p>'
+st.markdown(par1, unsafe_allow_html=True)
 
-    # Button recommendation
-    buffer1, col1, buffer2 = st.columns([1.45, 1, 1])
-    is_clicked = col1.button(label="Recommend")
 
-    if is_clicked:
-        #user_id = int(st.text_input("Enter User ID:"))
+st.text("")
+
+
+st.text("")
+par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Choose how many movie recommendations do you want.</p>'
+st.markdown(par2, unsafe_allow_html=True)
+movie_count = st.slider(label="",min_value=1, max_value=5)
+
+st.text("")
+st.text("")
+
+# User input for filtering by year
+par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Filter by Year</p>'
+st.markdown(par2, unsafe_allow_html=True)
+min_year, max_year = st.slider("", min_year_df, max_year_df, (min_year_df, max_year_df))
+
+# User input for genre selection
+st.text("")
+par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Select Genres</p>'
+st.markdown(par2, unsafe_allow_html=True)
+selected_genres = st.multiselect("", unique_genres)
+
+# Button recommendation
+buffer1, col1, buffer2 = st.columns([1.45, 1, 1])
+is_clicked = col1.button(label="Recommend")
+l_titles,l_feedbacks=[],[]
+if is_clicked or Shared_Variables.W_matrix!=[]:
+
+
+
+    if Shared_Variables.W_matrix==[]:
+
+        Shared_Variables.W_matrix=np.ones((unique_movies,unique_users)) #weight matrix
         if not selected_genres:
             recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, start_year = min_year, end_year = max_year)
         else:
             recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, selected_genres, min_year, max_year)
-
-        # Fetch movie information
-        movie_info_list = [fetch_movie_info(movie['title'], movie['year']) for movie in recommendations]
-
-        # Check if any movies were found, print warnings if necessary
-        if movie_info_list:
-             for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
-                st.markdown("---")
-                col1, col2= st.columns(2)
-                with col1:
-                    display_poster(selected_movie)
-                with col2:
-                    display_movie_info(selected_movie, ownDB_movie)
-
-        # Show a warning when no recommendations match the applied filters
-        else:
-            st.warning("💬 Oops! It looks like we couldn't find any movies with the entered filters. "
-               "No worries, though! You can enhance your search experience by tweaking your filters. "
-               "Consider trying a different year, exploring a new genre, or expanding your search criteria. "
-               "Happy searching! 😊")
         
-        # Show a warning when the number of recommendations is less than the requested count
-        if len(recommendations) < movie_count and len(recommendations) != 0:
-             st.warning("💬 Uh-oh! We couldn't find enough movies to meet your request. "
-                   "Consider adjusting your filters for more options. "
-                   "Happy searching! 😊")
+    else:
+
+        recommendations = recommended_movies_by_user_last(model, user_id, movie_count, movies_df, Shared_Variables.W_matrix[:,user_id], selected_genres,start_year = min_year, end_year = max_year)
+    movie_info_list = [fetch_movie_info(movie['title'], movie['year']) for movie in recommendations]   
+    # Fetch movie information
+    
 
 
+    # Check if any movies were found, print warnings if necessary
+    if movie_info_list:
+
+        for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
+            st.markdown("---")
+            col1, col2= st.columns(2)
+            with col1:
+                display_poster(selected_movie)     
+            with col2:
+                display_movie_info(selected_movie, ownDB_movie)
+
+        with st.form("Feedback"):
+            for selected_movie, ownDB_movie in zip(movie_info_list, recommendations):
+                st.write(f"Do you like {ownDB_movie['title']} as a movie recommendation?")
+    
+                # Use the movie title as a key to get the feedback status
+                feedback_key = f"feedback_{ownDB_movie['title']}"
+    
+                # Radio buttons for thumbs up and thumbs down
+                feedback_status = st.radio("", ["👍 Yes, I like it!", "👎 No, I don't like it!"], key=feedback_key)
+
+                if feedback_status == "👍 Yes, I like it!":
+                    l_feedbacks.append(1)
+                else:
+                    l_feedbacks.append(-1)
+                l_titles.append(ownDB_movie['title'])
 
 
-# Run the app
-if __name__ == "__main__":
-    main()
+            st.write("🌟 We appreciate your feedback! "
+                "Based on your preferences, we will provide "
+                "you with even better movie recommendations in the next set. Enjoy your movies!")
+            
+            # Submit button
+            if st.form_submit_button("Submit"):
+
+                Shared_Variables.W_matrix=update_weights(user_id,l_titles,l_feedbacks,Shared_Variables.W_matrix,movies_df)
 
 
+    # Show a warning when no recommendations match the applied filters
+    else:
+        st.warning("💬 Oops! It looks like we couldn't find any movies with the entered filters. "
+            "No worries, though! You can enhance your search experience by tweaking your filters. "
+            "Consider trying a different year, exploring a new genre, or expanding your search criteria. "
+            "Happy searching! 😊")
+    
+    # Show a warning when the number of recommendations is less than the requested count
+    if len(recommendations) < movie_count and len(recommendations) != 0:
+            st.warning("💬 Uh-oh! We couldn't find enough movies to meet your request. "
+                "Consider adjusting your filters for more options. "
+                "Happy searching! 😊")
 
 
