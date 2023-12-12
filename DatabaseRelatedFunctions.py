@@ -86,3 +86,25 @@ def addRandomUser():
         addUser(userName, password)
     else:
         addRandomUser()
+# Adds a new observation of a recomendation a userId has disliked
+def addDislikedRecommendation(userId, movie):
+    connectToDatabase()
+    sqlQuery = "INSERT INTO dislikedRecommendations (userId, movie) VALUES (?,?)"
+    cursor.execute(sqlQuery, (userId, movie))
+    conn.commit()
+    closeConnectionToDatabase()
+
+#Given a userId returns a list of the recommendations he has disliked
+def getDislikedRecommendations(userId):
+    connectToDatabase()
+    sqlQuery = "SELECT DISTINCT movie FROM dislikedRecommendations WHERE userId = ?"
+    cursor.execute(sqlQuery, (userId, ))
+    rows =  cursor.fetchall()
+    dislikedRecommendationsByUser = [row[0] for row in rows]
+    closeConnectionToDatabase()
+    return dislikedRecommendationsByUser
+
+addDislikedRecommendation(1, "Hola")
+addDislikedRecommendation(1, "Adeu")
+print(getDislikedRecommendations(2))
+print(type(getDislikedRecommendations(2)))
