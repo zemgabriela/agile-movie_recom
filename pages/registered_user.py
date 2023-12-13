@@ -42,6 +42,7 @@ def load_model():
     return model
 
 
+
 def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None, start_year=None, end_year=None):
     # Apply genre/year filters before making predictions
     if genres is not None:
@@ -59,68 +60,36 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
 
     # Now predict scores for the (optionally) filtered items for the user
     filtered_movie_ids = movies_df['item_id'].values
+    filtered_movie_titles = movies_df['title'].values
+
     if len(filtered_movie_ids) == 0:
         return []  # No movies after filtering, return an empty list
+
     pred = model.predict(user_ids=np.array([user_id]*len(filtered_movie_ids)), item_ids=filtered_movie_ids)
+
+
+    movies_and_predictions = pd.DataFrame({'movieTitle': filtered_movie_titles, 'Ratings': pred})
+
+    Users_Not_liked_Movies = DatabaseRelatedFunctions.getDislikedRecommendations(user_id)
+    
+    if(Users_Not_liked_Movies):
+        condition = movies_and_predictions['movieTitle'].isin(Users_Not_liked_Movies)
+        movies_and_predictions.loc[condition, 'Ratings'] = movies_and_predictions.loc[condition, 'Ratings'] / 5  
+    Ratings = movies_and_predictions['Ratings'].values
     
     # Sort predicted ratings in descending order
-    sorted_indices = np.argsort(pred)[::-1]
+    sorted_indices = np.argsort(Ratings)[::-1]
 
     # Select the top n_movies
     top_indices = sorted_indices[:n_movies]
     recommended_movies = movies_df.iloc[top_indices][['title','genres','year']].to_dict(orient='records')
-    predicted_ratings = pred[top_indices]
+    predicted_ratings = Ratings[top_indices]
 
     return recommended_movies
 
-
-
-
-
-def recommended_movies_by_user_last(model, user_id, n_movies, movies_df, w_vector=np.ones(9742), genres=None, start_year=None, end_year=None,): 
-    #here w_vector is the weight vector of that user. If nothing is just the vector of ones.
-    # Apply genre/year filters before making predictions
-    if genres is not None:
-        filter_condition = lambda x: any(genre.lower() in x.lower() for genre in genres)
-        movies_df = movies_df[movies_df['genres'].apply(filter_condition)]
-    if start_year is not None:
-        if end_year is not None:
-            movies_df = movies_df[(movies_df['year'] >= start_year) & (movies_df['year'] <= end_year)]
-        else:
-            movies_df = movies_df[movies_df['year'] >= start_year]
-
-    # Now predict scores for the (optionally) filtered items for the user
-    filtered_movie_ids = movies_df['item_id'].values
-
-
-    w_vector=w_vector[list(movies_df.index)]
-    pred = model.predict(user_ids=np.array([user_id]*len(filtered_movie_ids)), item_ids=filtered_movie_ids)
-    pred=pred*w_vector #according to our idea, in this way we remove movies with the bad feedback.
-
-    # Sort predicted ratings in descending order
-    sorted_indices = np.argsort(pred)[::-1]
-    # Select the top n_movies
-    top_indices = sorted_indices[:n_movies]
-    recommended_movies = movies_df.iloc[top_indices][['title','genres','year']].to_dict(orient='records')
-    predicted_ratings = pred[top_indices]
-
-    return recommended_movies
 
 unique_movies = movies_df['item_id'].nunique()
 unique_users= load_users()
-
-
-#let's create the function that change the weights according to the star feedback
-
-def update_weights(user_id,list_titles,feedbacks,W_matrix,movies_df):
-    i=0
-    #titles contains the list of titles that has a feedback, while feedbacks is a vector that is of the form [4/5,5/5,1/5,...]
-
-    for title in list_titles:
-        index=movies_df.index[movies_df['title']==title] 
-        W_matrix[index,user_id]=feedbacks[i]
-        i+=1
-    return W_matrix
 
 # Unique Genres df
 
@@ -284,26 +253,16 @@ selected_genres = st.multiselect("", unique_genres)
 # Button recommendation
 buffer1, col1, buffer2 = st.columns([1.45, 1, 1])
 is_clicked = col1.button(label="Recommend")
-l_titles,l_feedbacks=[],[]
-if is_clicked or Shared_Variables.W_matrix!=[]:
 
+if is_clicked:
 
-
-    if Shared_Variables.W_matrix==[]:
-
-        Shared_Variables.W_matrix=np.ones((unique_movies,unique_users)) #weight matrix
-        if not selected_genres:
-            recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, start_year = min_year, end_year = max_year)
-        else:
-            recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, selected_genres, min_year, max_year)
-        
+    if not selected_genres:
+        recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, start_year = min_year, end_year = max_year)
     else:
+        recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, selected_genres, min_year, max_year)
 
-        recommendations = recommended_movies_by_user_last(model, user_id, movie_count, movies_df, Shared_Variables.W_matrix[:,user_id], selected_genres,start_year = min_year, end_year = max_year)
     movie_info_list = [fetch_movie_info(movie['title'], movie['year']) for movie in recommendations]   
     # Fetch movie information
-    
-
 
     # Check if any movies were found, print warnings if necessary
     if movie_info_list:
@@ -327,20 +286,17 @@ if is_clicked or Shared_Variables.W_matrix!=[]:
                 feedback_status = st.radio("", ["👍 Yes, I like it!", "👎 No, I don't like it!"], key=feedback_key)
 
                 if feedback_status == "👍 Yes, I like it!":
-                    l_feedbacks.append(1)
+                    st.write("That's nice.")
                 else:
-                    l_feedbacks.append(-1)
-                l_titles.append(ownDB_movie['title'])
-
-
-            st.write("🌟 We appreciate your feedback! "
+                    st.write("We're sorry to hear that!")
+                DatabaseRelatedFunctions.addDislikedRecommendation(user_id,ownDB_movie['title'])
+           
+            # Submit button
+            if st.form_submit_button("Submit"):
+                 st.write("🌟 We appreciate your feedback! "
                 "Based on your preferences, we will provide "
                 "you with even better movie recommendations in the next set. Enjoy your movies!")
             
-            # Submit button
-            if st.form_submit_button("Submit"):
-
-                Shared_Variables.W_matrix=update_weights(user_id,l_titles,l_feedbacks,Shared_Variables.W_matrix,movies_df)
 
 
     # Show a warning when no recommendations match the applied filters
