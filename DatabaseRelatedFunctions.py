@@ -41,6 +41,7 @@ def login_user(userName, password):
     data = cursor.fetchall()
     closeConnectionToDatabase()
     return data
+
 # Returns false if the UserName doesn't exist, true otherwise
 def checkUserId(userName):
     connectToDatabase()
@@ -77,6 +78,21 @@ def getUserId(userName):
         else:
             closeConnectionToDatabase()
             return None
+#Given a movieTitle returns its movieID
+def getMovieId(movieTitle):
+    try:
+        connectToDatabase()
+        cursor.execute(f"SELECT movieID FROM Movies WHERE title like '%{movieTitle}%'")
+        result = cursor.fetchone()
+        if result:
+            movieID = result[0]
+            closeConnectionToDatabase()
+            return int(movieID)
+        else:
+            closeConnectionToDatabase()
+            return None
+    except:
+        return None
 
 def addRandomUser():
     fake = Faker()
@@ -86,6 +102,7 @@ def addRandomUser():
         addUser(userName, password)
     else:
         addRandomUser()
+
 # Adds a new observation of a recomendation a userId has disliked
 def addDislikedRecommendation(userId, movie):
     connectToDatabase()
@@ -104,7 +121,3 @@ def getDislikedRecommendations(userId):
     closeConnectionToDatabase()
     return dislikedRecommendationsByUser
 
-addDislikedRecommendation(1, "Hola")
-addDislikedRecommendation(1, "Adeu")
-print(getDislikedRecommendations(2))
-print(type(getDislikedRecommendations(2)))
