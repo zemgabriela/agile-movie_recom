@@ -9,41 +9,67 @@ from streamlit_extras.switch_page_button import switch_page
 import DatabaseRelatedFunctions
 import Shared_Variables
 
+st.set_page_config(
+    page_title="Movie Reccomender",
+    page_icon=":movie_camera:",
+    initial_sidebar_state='collapsed',
+)
+
+image_path = ["MOVIE.png"]
+
+# Define a custom style with @font-face
+custom_style = """
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Carme&display=swap');
+        .custom-font {
+            font-family: 'Carme', sans-serif;
+        }
+    </style>
+"""
+st.markdown(custom_style, unsafe_allow_html=True)
+
+image_path = ["MOVIE.png"]
 if "is_clicked" not in st.session_state:
     st.session_state.is_clicked = False
-
-if (Shared_Variables.loggedIn == True) and (DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)<= Shared_Variables.max_id_user_model):
+    
+if (Shared_Variables.loggedIn == True) and (DatabaseRelatedFunctions.getUserId(Shared_Variables.userName) <= Shared_Variables.max_id_user_model):
     st.session_state.is_clicked = False
     switch_page('registered_user')
-else:        
-    st.title("""
-    Recommendation System for Agile
-     """)
+else:
+    st.image(image_path, use_column_width='always')
 
     st.text("")
     st.text("")
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Welcome to our film recomender!😎.</p>'
-    st.markdown(par2, unsafe_allow_html=True)
+    st.markdown('<p class="custom-font" style="font-size: 20px;text-align:center;">🎬Welcome to our film recommender! Discover your next favorite movie!🎬</p>', unsafe_allow_html=True)
     st.text("")
     st.text("")
-
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">If you are already in our database, please sign in. If you aren\'t, you can create an account.</p>'
-    st.markdown(par2, unsafe_allow_html=True)
-    if st.button("You don't have an account? Register here!"):
-        switch_page('user_registration')
-
-    if st.button("You already have an account? Log in here!"):
-        switch_page('user_login')
-        
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">If you just want a recommendation, click the next button</p>'
-    st.markdown(par2, unsafe_allow_html=True)
     st.text("")
+    st.text("")
+    st.markdown('<p class="custom-font" style="font-size: 17px;text-align:center;">Sign in and continue discovering. If you new here, register and create an account.</p>', unsafe_allow_html=True)
+    st.text("")   
+    col1, col2, col3 = st.columns([6, 3, 9])
+    with col2:
+        if st.button("Log in :lock:"):
+            switch_page('user_login')
+    with col3:
+        if st.button("Register here"):
+            switch_page('user_registration')
+    
+    st.text("") 
+    st.text("")
+    st.text("")  
+    st.markdown('<p class="custom-font" style="font-size: 17px;text-align:center;">Coming here only for a recommendation? Click the next button.</p>', unsafe_allow_html=True)
+    st.text("") 
+    
+    col4, col5 = st.columns([2, 5])
+    with col5:
+        if st.button("I just want to get a recommendation!"):
+            switch_page('new_user')
 
-    if st.button("I just want to get a recomendation!"):
-        switch_page('new_user')
-       
-    st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
-
-
-
-
+    st.text("")
+    st.text("")
+    st.text("")
+    st.text("")
+    st.text("")
+    st.text("")
+    st.text("""// This Content-Based Recommender System was created for Agile Data Project(2023) //""")
