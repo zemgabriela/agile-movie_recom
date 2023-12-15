@@ -179,6 +179,13 @@ def display_poster(selected_movie, width = 200):
 # Main function
 def main():               
 
+    if(Shared_Variables.userName != None):
+         st.title("""
+            Welcome back, {0}!
+                """.format(Shared_Variables.userName))
+         st.text("")
+        
+
     col1, col2= st.columns([12, 2])
     with col1:
         st.title("""
