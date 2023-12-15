@@ -7,15 +7,20 @@ from streamlit_extras.switch_page_button import switch_page
 import DatabaseRelatedFunctions
 import Shared_Variables
 
-if st.button('Home'):
-    switch_page('Home')
-
-st.subheader("Login Section")
+st.set_page_config(
+    page_title="Movie Reccomender",
+    page_icon=":movie_camera:",
+    initial_sidebar_state='collapsed',
+)
+col1, col2 = st.columns([12, 2])
+with col2:
+    if st.button('Home'):
+        switch_page('Home')
+with col1:
+    st.subheader("Login Section :lock:")
 username = st.text_input("User Name")
 password = st.text_input("Password", type='password')
-
-#st.set_page_config(initial_sidebar_state="collapsed") 
-st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+#st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
 
 if st.checkbox("Login"):
 # The next line should check the password is correct

@@ -8,15 +8,23 @@ import DatabaseRelatedFunctions
 import Shared_Variables
 
 
-if st.button('Home'):
-    switch_page('Home')
+st.set_page_config(
+    page_title="Movie Reccomender",
+    page_icon=":movie_camera:",
+    initial_sidebar_state='collapsed',
+)
 
-st.subheader("Create New Account")
+col1, col2 = st.columns([12, 2])
+with col2:
+    if st.button('Home'):
+        switch_page('Home')
+with col1:
+    st.subheader("Create New Account")
+#st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+
+
 new_user = st.text_input("Username")
 new_password = st.text_input("Password", type= 'password')
-
-#st.set_page_config(initial_sidebar_state="collapsed") 
-st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
 
 if st.button("Signup"):
 

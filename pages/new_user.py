@@ -13,7 +13,11 @@ import Shared_Variables
 # Load movies data from the sql database
 
 
-
+st.set_page_config(
+    page_title="Movie Reccomender",
+    page_icon=":movie_camera:",
+    initial_sidebar_state='collapsed',
+)
 
 def load_movie_data():
 
@@ -175,17 +179,14 @@ def display_poster(selected_movie, width = 200):
 # Main function
 def main():               
 
-
-    col1, col2= st.columns([3, 1])
+    col1, col2= st.columns([12, 2])
     with col1:
-        if Shared_Variables.userName == None:
-            st.title("""
-            Welcome new user """)
-        else:
-            st.title(f"Welcome {Shared_Variables.userName}")
+        st.title("""
+        Discover Your Next Favorite Movie! :popcorn:""")
 
         st.text("")
     with col2:
+        st.text("")
         st.text("")
         if Shared_Variables.loggedIn == True:
             if st.button('Log out'):
@@ -197,12 +198,16 @@ def main():
                 switch_page('Home')
 
     #st.set_page_config(initial_sidebar_state="collapsed") 
-    st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+    #st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+        
+
+    #st.set_page_config(initial_sidebar_state="collapsed") 
+    #st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
 
 
 
     movies.sort()
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Select your favorites movies.</p>'
+    par2= '<p style="font-family:sans-serif;font-size: 18px;">Select your favorites movies.</p>'
     st.markdown(par2, unsafe_allow_html=True)
 
     list_of_movies = st.multiselect(label="", options=movies)
@@ -213,7 +218,7 @@ def main():
 
 
     st.text("")
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Choose how many movie recommendations do you want.</p>'
+    par2= '<p style="font-family:sans-serif; font-size: 18px;">Choose how many movie recommendations do you want.</p>'
     st.markdown(par2, unsafe_allow_html=True)
     movie_count  = st.slider(label="",min_value=1, max_value=5)
 
@@ -227,7 +232,7 @@ def main():
 
     # User input for genre selection
     st.text("")
-    par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Select Genres</p>'
+    par2= '<p style="font-family:sans-serif;  font-size: 18px;">Select Genres</p>'
     st.markdown(par2, unsafe_allow_html=True)
     selected_genres = st.multiselect("", unique_genres)
 

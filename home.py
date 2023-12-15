@@ -27,6 +27,7 @@ custom_style = """
     </style>
 """
 st.markdown(custom_style, unsafe_allow_html=True)
+#st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
 
 image_path = ["MOVIE.png"]
 if "is_clicked" not in st.session_state:

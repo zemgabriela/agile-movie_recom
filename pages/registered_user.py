@@ -10,6 +10,11 @@ from imdb import IMDb
 import DatabaseRelatedFunctions
 import Shared_Variables
 
+st.set_page_config(
+    page_title="Movie Reccomender",
+    page_icon=":movie_camera:",
+    initial_sidebar_state='collapsed',
+)
 
 if(Shared_Variables.loggedIn == False):
     switch_page('home')
@@ -133,7 +138,7 @@ model = load_model()
 user_ids=([str(elem) for elem in list(range(1,611))])
 
 #st.set_page_config(initial_sidebar_state="collapsed") 
-st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
+#st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )
 
 
 
@@ -249,15 +254,14 @@ with col2:
 
 user_id=DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)
 
-par1 = '<p style="font-family:sans-serif; color:Grey; font-size: 28px;">Please choose your preferences</p>'
+par1 = '<p style="font-family:sans-serif; font-size: 18px;">Lets get you some new tips on what to watch 🍿</p>'
 st.markdown(par1, unsafe_allow_html=True)
 
-
 st.text("")
 
 
 st.text("")
-par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Choose how many movie recommendations do you want.</p>'
+par2= '<p style="font-family:sans-serif;font-size: 18px;">Choose how many movie recommendations do you want.</p>'
 st.markdown(par2, unsafe_allow_html=True)
 movie_count = st.slider(label="",on_change= Reset_Recommend_Button, min_value=1, max_value=5)
 
