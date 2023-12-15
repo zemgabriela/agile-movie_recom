@@ -12,6 +12,9 @@ import Shared_Variables
 
 # Load movies data from the sql database
 
+
+
+
 def load_movie_data():
 
     movies_df = DatabaseRelatedFunctions.get_table('Movies')
@@ -175,15 +178,23 @@ def main():
 
     col1, col2= st.columns([3, 1])
     with col1:
-        st.title("""
-        Welcome new user """)
+        if Shared_Variables.userName == None:
+            st.title("""
+            Welcome new user """)
+        else:
+            st.title(f"Welcome {Shared_Variables.userName}")
 
         st.text("")
     with col2:
         st.text("")
-        st.text("")
-        if st.button('Home'):
-            switch_page('Home')
+        if Shared_Variables.loggedIn == True:
+            if st.button('Log out'):
+                Shared_Variables.loggedIn = False
+                Shared_Variables.userName = None
+                switch_page('Home')
+        else:    
+            if st.button('Home'):
+                switch_page('Home')
 
     #st.set_page_config(initial_sidebar_state="collapsed") 
     st.markdown( """ <style> [data-testid="stSidebarContent"] { display: none } </style> """, unsafe_allow_html=True, )

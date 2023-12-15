@@ -10,6 +10,32 @@ from imdb import IMDb
 import DatabaseRelatedFunctions
 import Shared_Variables
 
+
+if(Shared_Variables.loggedIn == False):
+    switch_page('home')
+
+def new_recommendations(user_id, dictionary):
+    st.session_state.is_clicked = True
+    for i in range(len(dictionary)):
+        DatabaseRelatedFunctions.addDislikedRecommendation(user_id, dictionary[i]['title'])
+    st.success("🌟 We appreciate your feedback! "
+                "Based on your preferences, we will provide "
+                "you with even better movie recommendations in the next set. Enjoy your movies!")    
+    
+def Reset_Recommend_Button():
+    st.session_state.is_clicked = False
+def like_function():
+    st.session_state.is_clicked = True
+    st.success("🌟 We appreciate your feedback! "
+                "Based on your preferences, we will provide "
+                "you with even better movie recommendations in the next set. Enjoy your movies!")
+def dislike_function(user_id, movie):
+    st.session_state.is_clicked = True
+    st.success("🌟 We appreciate your feedback! "
+                "Based on your preferences, we will provide "
+                "you with even better movie recommendations in the next set. Enjoy your movies!")
+    DatabaseRelatedFunctions.addDislikedRecommendation(user_id, movie)
+
 # Load movies.csv
 def load_movie_data():
 
@@ -66,7 +92,6 @@ def recommended_movies_by_user(model, user_id, n_movies, movies_df, genres=None,
         return []  # No movies after filtering, return an empty list
 
     pred = model.predict(user_ids=np.array([user_id]*len(filtered_movie_ids)), item_ids=filtered_movie_ids)
-
 
     movies_and_predictions = pd.DataFrame({'movieTitle': filtered_movie_titles, 'Ratings': pred})
 
@@ -234,7 +259,7 @@ st.text("")
 st.text("")
 par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Choose how many movie recommendations do you want.</p>'
 st.markdown(par2, unsafe_allow_html=True)
-movie_count = st.slider(label="",min_value=1, max_value=5)
+movie_count = st.slider(label="",on_change= Reset_Recommend_Button, min_value=1, max_value=5)
 
 st.text("")
 st.text("")
@@ -242,61 +267,43 @@ st.text("")
 # User input for filtering by year
 par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Filter by Year</p>'
 st.markdown(par2, unsafe_allow_html=True)
-min_year, max_year = st.slider("", min_year_df, max_year_df, (min_year_df, max_year_df))
+min_year, max_year = st.slider("", min_year_df, max_year_df, (min_year_df, max_year_df),on_change= Reset_Recommend_Button)
 
 # User input for genre selection
 st.text("")
 par2= '<p style="font-family:sans-serif; color:Grey; font-size: 18px;">Select Genres</p>'
 st.markdown(par2, unsafe_allow_html=True)
-selected_genres = st.multiselect("", unique_genres)
+selected_genres = st.multiselect("", unique_genres,on_change= Reset_Recommend_Button)
 
 # Button recommendation
 buffer1, col1, buffer2 = st.columns([1.45, 1, 1])
+
 is_clicked = col1.button(label="Recommend")
 
-if is_clicked:
-
+if st.session_state.is_clicked == True or is_clicked:
+    
     if not selected_genres:
         recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, start_year = min_year, end_year = max_year)
     else:
         recommendations = recommended_movies_by_user(model, user_id, movie_count, movies_df, selected_genres, min_year, max_year)
-
+    
     movie_info_list = [fetch_movie_info(movie['title'], movie['year']) for movie in recommendations]   
     # Fetch movie information
-
+    
     # Check if any movies were found, print warnings if necessary
     if movie_info_list:
-
-        for selected_movie, ownDB_movie in zip(movie_info_list, recommendations): #Now iterating over IMDB info and our own DB for each movie recommendation!
+        for selected_movie, ownDB_movie, i in zip(movie_info_list, recommendations, range(movie_count)): #Now iterating over IMDB info and our own DB for each movie recommendation!
             st.markdown("---")
-            col1, col2= st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 display_poster(selected_movie)     
             with col2:
                 display_movie_info(selected_movie, ownDB_movie)
-
-        with st.form("Feedback"):
-            for selected_movie, ownDB_movie in zip(movie_info_list, recommendations):
-                st.write(f"Do you like {ownDB_movie['title']} as a movie recommendation?")
-    
-                # Use the movie title as a key to get the feedback status
-                feedback_key = f"feedback_{ownDB_movie['title']}"
-    
-                # Radio buttons for thumbs up and thumbs down
-                feedback_status = st.radio("", ["👍 Yes, I like it!", "👎 No, I don't like it!"], key=feedback_key)
-
-                if feedback_status == "👍 Yes, I like it!":
-                    st.write("That's nice.")
-                else:
-                    st.write("We're sorry to hear that!")
-                DatabaseRelatedFunctions.addDislikedRecommendation(user_id,ownDB_movie['title'])
-           
-            # Submit button
-            if st.form_submit_button("Submit"):
-                 st.write("🌟 We appreciate your feedback! "
-                "Based on your preferences, we will provide "
-                "you with even better movie recommendations in the next set. Enjoy your movies!")
-            
+            with col3:
+                Like = st.button('👍 I like this recommendation',on_click=like_function, key=selected_movie )
+                Dislike = st.button("👎 I do not like this recommendation", on_click=dislike_function, args = [user_id, ownDB_movie['title']],  key = i)
+        
+        new_recommendations = st.button(label="I do not like any of these recommendations!", on_click = new_recommendations, args=[user_id, recommendations])   
 
 
     # Show a warning when no recommendations match the applied filters

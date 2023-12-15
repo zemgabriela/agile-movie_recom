@@ -26,6 +26,7 @@ if st.button("Signup"):
         Shared_Variables.userName = new_user
         Shared_Variables.loggedIn = True
         if (DatabaseRelatedFunctions.getUserId(new_user)<=Shared_Variables.max_id_user_model):
+            st.session_state.is_clicked = False
             switch_page('registered_user')
         else:
             switch_page('new_user')

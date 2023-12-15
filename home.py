@@ -9,8 +9,11 @@ from streamlit_extras.switch_page_button import switch_page
 import DatabaseRelatedFunctions
 import Shared_Variables
 
+if "is_clicked" not in st.session_state:
+    st.session_state.is_clicked = False
 
 if (Shared_Variables.loggedIn == True) and (DatabaseRelatedFunctions.getUserId(Shared_Variables.userName)<= Shared_Variables.max_id_user_model):
+    st.session_state.is_clicked = False
     switch_page('registered_user')
 else:        
     st.title("""

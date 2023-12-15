@@ -25,6 +25,7 @@ if st.checkbox("Login"):
         Shared_Variables.userName = username
         Shared_Variables.loggedIn = True
         if (DatabaseRelatedFunctions.getUserId(username)<=Shared_Variables.max_id_user_model):
+            st.session_state.is_clicked = False
             switch_page('registered_user')
         else:
             switch_page('new_user')
